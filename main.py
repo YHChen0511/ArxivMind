@@ -20,11 +20,9 @@ app = FastAPI()
 
 # 初始化 OpenAI
 client = OpenAI(
-    api_key="sk-r96NJkJ9PxPpyOjF8vh2xdefGwsNk9Te6CTuzw2ImiOZPNbs", # 请替换为您的 gptgod API Key
-    base_url="https://api.gptgod.online/v1/"
+    api_key=os.getenv("LLM_API_KEY"),
+    base_url=os.getenv("LLM_API_BASE_URL", "https://api.openai.com/v1")
 )
-# genai.configure(api_key="AIzaSyC0SJz7Q1kov_gU5cxYRUefiLSphTksIqc")
-# model = genai.GenerativeModel('gemini-2.5-flash')
 
 class SearchRequest(BaseModel):
     idea: str

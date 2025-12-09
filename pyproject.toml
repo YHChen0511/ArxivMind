@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "arxiv>=2.3.1",
+    "dotenv>=0.9.9",
     "fastapi>=0.124.0",
     "google>=3.0.0",
     "google-genai>=1.54.0",

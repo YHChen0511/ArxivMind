@@ -1,10 +1,6 @@
-<div align="center">
-
 # ArxivMind - AI 驱动的深度学术调研助手
 
 **从想法到论文，只需一步。**
-
-</div>
 
 ---
 

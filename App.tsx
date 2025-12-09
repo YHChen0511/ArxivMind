@@ -22,7 +22,7 @@ const App: React.FC = () => {
     // Reset UI
     setPapers([]);
     setAnalysis(null);
-    setSearchState({ status: 'generating_query', message: 'Translating idea to research query...' });
+    setSearchState({ status: 'generating_query', message: 'Starting research...' });
     // Reset filters on new search
     setSortBy('score');
     setMinScore(0);
@@ -40,34 +40,67 @@ const App: React.FC = () => {
         throw new Error(`后端错误: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      if (!response.body) throw new Error('No response body');
 
-      const formattedPapers = data.papers.map((p: any) => ({
-        id: p.url || p.entry_id,
-        title: p.title,
-        summary: p.summary,
-        authors: p.authors || [],
-        published: p.published || new Date().toISOString(),
-        updated: p.updated || new Date().toISOString(),
-        link: p.url || p.pdf_url,
-        categories: p.categories || ['Research'],
-        score: p.score,
-        reason: p.reason
-      }));
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      setPapers(formattedPapers);
-      
-      const analysisData = typeof data.analysis === 'string' 
-        ? JSON.parse(data.analysis) 
-        : data.analysis;
-        
-      setAnalysis(analysisData);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      setSearchState({ status: 'success' });
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep the last incomplete line in buffer
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const event = JSON.parse(line);
+            
+            if (event.type === 'progress') {
+               let status: SearchState['status'] = 'generating_query';
+               if (event.step === 'analyzing') status = 'generating_query';
+               else if (event.step === 'searching') status = 'fetching_papers';
+               else if (event.step === 'reranking') status = 'analyzing';
+               
+               setSearchState({ status, message: event.message });
+            } else if (event.type === 'result') {
+               const data = event.data;
+               const formattedPapers = data.papers.map((p: any) => ({
+                id: p.url || p.entry_id,
+                title: p.title,
+                summary: p.summary,
+                authors: p.authors || [],
+                published: p.published || new Date().toISOString(),
+                updated: p.updated || new Date().toISOString(),
+                link: p.url || p.pdf_url,
+                categories: p.categories || ['Research'],
+                score: p.score,
+                reason: p.reason
+              }));
+
+              setPapers(formattedPapers);
+              
+              const analysisData = typeof data.analysis === 'string' 
+                ? JSON.parse(data.analysis) 
+                : data.analysis;
+                
+              setAnalysis(analysisData);
+              setSearchState({ status: 'success' });
+            } else if (event.type === 'error') {
+               throw new Error(event.message);
+            }
+          } catch (e) {
+            console.error('Error parsing stream line:', line, e);
+          }
+        }
+      }
 
     } catch (error) {
       console.error(error);
-      setSearchState({ status: 'error', message: 'An unexpected error occurred. Please check your API Key and connection.' });
+      setSearchState({ status: 'error', message: error instanceof Error ? error.message : 'An unexpected error occurred. Please check your API Key and connection.' });
     }
   };
 

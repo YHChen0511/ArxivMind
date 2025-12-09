@@ -1,7 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Loader2, BookOpen, AlertCircle, Filter, ArrowUpDown } from 'lucide-react';
-import { generateArxivQuery, analyzePapers } from './services/geminiService';
-import { searchArxiv } from './services/arxivService';
 import { Paper, SearchState, AnalysisResult } from './types';
 import { PaperCard } from './components/PaperCard';
 import { AnalysisSection } from './components/AnalysisSection';
